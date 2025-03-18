@@ -94,3 +94,10 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+  assets:
+    - assets/podcast1.png
+    - assets/podcast2.png
+    - assets/podcast3.png
+    - assets/podcast4.png
+    - assets/podcast5.png
