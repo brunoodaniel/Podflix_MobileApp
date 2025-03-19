@@ -15,33 +15,33 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Map<String, String>> podcasts = [
     {
       'imagePath': 'assets/podcast1.png',
-      'title': 'Podcast 1aaaaaaaaaaaaaaaaaaaaaaaaaa',
-      'description': 'Uma discussão interessante sobre tecnologia.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-      'date': '15/10/2023',
+      'title': 'Código Aberto: Tecnologia e Sociedade',
+      'description': 'Explore os mistérios da mente humana, da neurociência à filosofia. Convidados especiais discutem como pensamos, sentimos e criamos. Uma jornada para entender o que nos torna quem somos.',
+      'date': '15/10/2025',
     },
     {
       'imagePath': 'assets/podcast2.png',
-      'title': 'Podcast 2',
-      'description': 'Explorando o mundo dos games.',
-      'date': '15/10/2023',
+      'title': 'Diário de um Viajante',
+      'description': 'Acompanhe as aventuras e reflexões de um viajante pelo mundo. Histórias reais, culturas fascinantes e lições de vida que vão além do mapa.',
+      'date': '11/05/2025',
     },
     {
       'imagePath': 'assets/podcast3.png',
-      'title': 'Podcast 3',
-      'description': 'Os melhores filmes do ano analisados.',
-      'date': '15/10/2023',
+      'title': 'Sons e Sentidos',
+      'description': 'Um mergulho na música, explorando gêneros, histórias por trás das canções e entrevistas com artistas. Para quem ama sentir a vida em forma de melodia.',
+      'date': '01/08/2025',
     },
     {
       'imagePath': 'assets/podcast4.png',
-      'title': 'Podcast 4',
-      'description': 'Histórias inspiradoras de sucesso.',
-      'date': '15/10/2023',
+      'title': 'Rádio Viva: O Som da Nostalgia',
+      'description': 'Reviva a magia do rádio com programas clássicos, histórias marcantes e trilhas sonoras que marcaram épocas. Um tributo à era de ouro do rádio.',
+      'date': '28/04/2025',
     },
     {
       'imagePath': 'assets/podcast5.png',
-      'title': 'Podcast 5',
-      'description': 'Dicas de produtividade para o dia a dia.',
-      'date': '15/10/2023',
+      'title': 'Show em Cena',
+      'description': 'Tudo sobre o mundo dos espetáculos! Entrevistas com artistas, bastidores de grandes shows e dicas para aproveitar ao máximo cada experiência cultural.',
+      'date': '09/09/2025',
     },
   ];
 

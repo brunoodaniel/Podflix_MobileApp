@@ -1,44 +1,20 @@
 import 'package:flutter/material.dart';
-import 'home_screen.dart';
-import 'register_screen.dart';
 
-class LoginScreen extends StatefulWidget {
+class RegisterScreen extends StatefulWidget {
   @override
-  _LoginScreenState createState() => _LoginScreenState();
+  _RegisterScreenState createState() => _RegisterScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-  String? registeredEmail;
-  String? registeredPassword;
   final _formKey = GlobalKey<FormState>();
 
-  void _login() {
+  void _register() {
     if (_formKey.currentState!.validate()) {
-      if (emailController.text == registeredEmail &&
-          passwordController.text == registeredPassword) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => HomeScreen()),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Email ou senha incorretos')),
-        );
-      }
-    }
-  }
-
-  void _navigateToRegister() async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => RegisterScreen()),
-    );
-    if (result != null && result is Map<String, String>) {
-      setState(() {
-        registeredEmail = result['email'];
-        registeredPassword = result['password'];
+      Navigator.pop(context, {
+        'email': emailController.text,
+        'password': passwordController.text,
       });
     }
   }
@@ -68,10 +44,8 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Image.asset('assets/favicon.png', width: 100, height: 100),
-                  SizedBox(height: 10),
                   Text(
-                    'Bem-vindo! 👋',
+                    'Criar Conta',
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
@@ -110,15 +84,15 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Digite sua senha';
+                      if (value == null || value.length < 6) {
+                        return 'A senha deve ter pelo menos 6 caracteres';
                       }
                       return null;
                     },
                   ),
                   SizedBox(height: 20),
                   ElevatedButton(
-                    onPressed: _login,
+                    onPressed: _register,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue[800],
                       padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
@@ -126,13 +100,13 @@ class _LoginScreenState extends State<LoginScreen> {
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    child: Text('Entrar', style: TextStyle(fontSize: 16, color: Colors.white)),
+                    child: Text('Cadastrar', style: TextStyle(fontSize: 16, color: Colors.white)),
                   ),
                   SizedBox(height: 15),
                   TextButton(
-                    onPressed: _navigateToRegister,
+                    onPressed: () => Navigator.pop(context),
                     child: Text(
-                      'Não tem uma conta? Cadastre-se',
+                      'Voltar para Login',
                       style: TextStyle(color: Colors.blue[800], fontSize: 14),
                     ),
                   ),
