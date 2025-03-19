@@ -4,12 +4,14 @@ class PodcastItem extends StatelessWidget {
   final String imagePath;
   final String title;
   final String description;
+  final String date;
   final VoidCallback onDetailsPressed;
 
   PodcastItem({
     required this.imagePath,
     required this.title,
     required this.description,
+    required this.date,
     required this.onDetailsPressed,
   });
 
@@ -18,7 +20,7 @@ class PodcastItem extends StatelessWidget {
     return Card(
       margin: EdgeInsets.symmetric(vertical: 10),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      color: Colors.grey[200], // Cor cinza para o fundo do card
+      color: Colors.white,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -40,11 +42,23 @@ class PodcastItem extends StatelessWidget {
                   description,
                   style: TextStyle(fontSize: 14, color: Colors.grey[700]),
                 ),
+                SizedBox(height: 5),
+                Text(
+                  'Data: $date',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                ),
                 SizedBox(height: 10),
                 Align(
                   alignment: Alignment.centerRight,
                   child: ElevatedButton(
                     onPressed: onDetailsPressed,
+                    style: ElevatedButton.styleFrom(
+                      foregroundColor: Colors.black, backgroundColor: Colors.blue[100], // Texto preto
+                      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
                     child: Text('Mais Detalhes'),
                   ),
                 ),

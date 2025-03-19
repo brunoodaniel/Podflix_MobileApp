@@ -96,6 +96,7 @@ flutter:
   # see https://flutter.dev/to/font-from-package
 
   assets:
+    - assets/favicon.png
     - assets/podcast1.png
     - assets/podcast2.png
     - assets/podcast3.png
