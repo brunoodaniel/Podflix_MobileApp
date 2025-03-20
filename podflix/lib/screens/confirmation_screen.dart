@@ -51,3 +51,24 @@ class ConfirmationScreen extends StatelessWidget {
     );
   }
 }
+
+void navigateToConfirmationScreen(BuildContext context) {
+  Navigator.push(
+    context,
+    PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) => ConfirmationScreen(
+        title: 'Podcast Title',
+        imagePath: 'assets/podcast_image.png',
+        description: 'This is the podcast description.',
+        date: '2025-03-20',
+      ),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        var fadeAnimation = Tween(begin: 0.0, end: 1.0).animate(CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeInOut,
+        ));
+        return FadeTransition(opacity: fadeAnimation, child: child);
+      },
+    ),
+  );
+}

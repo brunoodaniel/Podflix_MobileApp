@@ -33,7 +33,16 @@ class _LoginScreenState extends State<LoginScreen> {
   void _navigateToRegister() async {
     final result = await Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => RegisterScreen()),
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => RegisterScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          var fadeAnimation = Tween(begin: 0.0, end: 1.0).animate(CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeInOut,
+          ));
+          return FadeTransition(opacity: fadeAnimation, child: child);
+        },
+      ),
     );
     if (result != null && result is Map<String, String>) {
       setState(() {

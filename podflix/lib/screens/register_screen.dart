@@ -104,7 +104,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   SizedBox(height: 15),
                   TextButton(
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
                     child: Text(
                       'Voltar para Login',
                       style: TextStyle(color: Colors.blue[800], fontSize: 14),

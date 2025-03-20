@@ -51,8 +51,15 @@ class _HomeScreenState extends State<HomeScreen> {
   void _navigateToMarkedScreen() async {
     await Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => MarkedScreen(markedPodcasts: markedPodcasts),
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => MarkedScreen(markedPodcasts: markedPodcasts),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          var fadeAnimation = Tween(begin: 0.0, end: 1.0).animate(CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeInOut,
+          ));
+          return FadeTransition(opacity: fadeAnimation, child: child);
+        },
       ),
     );
     setState(() {});
@@ -70,8 +77,15 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => FavoritesScreen(favoritePodcasts: favoritePodcasts),
+                PageRouteBuilder(
+                  pageBuilder: (context, animation, secondaryAnimation) => FavoritesScreen(favoritePodcasts: favoritePodcasts),
+                  transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                    var fadeAnimation = Tween(begin: 0.0, end: 1.0).animate(CurvedAnimation(
+                      parent: animation,
+                      curve: Curves.easeInOut,
+                    ));
+                    return FadeTransition(opacity: fadeAnimation, child: child);
+                  },
                 ),
               );
             },
@@ -105,8 +119,8 @@ class _HomeScreenState extends State<HomeScreen> {
               onDetailsPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => DetailsScreen(
+                  PageRouteBuilder(
+                    pageBuilder: (context, animation, secondaryAnimation) => DetailsScreen(
                       title: podcasts[index]['title']!,
                       imagePath: podcasts[index]['imagePath']!,
                       description: podcasts[index]['description']!,
@@ -127,17 +141,31 @@ class _HomeScreenState extends State<HomeScreen> {
 
                         Navigator.push(
                           context,
-                          MaterialPageRoute(
-                            builder: (context) => ConfirmationScreen(
+                          PageRouteBuilder(
+                            pageBuilder: (context, animation, secondaryAnimation) => ConfirmationScreen(
                               title: podcasts[index]['title']!,
                               imagePath: podcasts[index]['imagePath']!,
                               description: podcasts[index]['description']!,
                               date: podcasts[index]['date']!,
                             ),
+                            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                              var fadeAnimation = Tween(begin: 0.0, end: 1.0).animate(CurvedAnimation(
+                                parent: animation,
+                                curve: Curves.easeInOut,
+                              ));
+                              return FadeTransition(opacity: fadeAnimation, child: child);
+                            },
                           ),
                         ).then((_) => setState(() {}));
                       },
                     ),
+                    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                      var fadeAnimation = Tween(begin: 0.0, end: 1.0).animate(CurvedAnimation(
+                        parent: animation,
+                        curve: Curves.easeInOut,
+                      ));
+                      return FadeTransition(opacity: fadeAnimation, child: child);
+                    },
                   ),
                 );
               },

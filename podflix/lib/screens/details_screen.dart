@@ -70,3 +70,36 @@ class DetailsScreen extends StatelessWidget {
     );
   }
 }
+
+void navigateToDetailsScreen(BuildContext context) {
+  // A função Navigator.push empurra uma nova tela para a pilha de navegação.
+  // Estamos utilizando PageRouteBuilder para personalizar a transição entre as telas.
+  Navigator.push(
+    context,
+    // PageRouteBuilder é usado para criar uma rota personalizada com animação.
+    PageRouteBuilder(
+      // O pageBuilder cria a tela para qual vamos navegar, passando os dados necessários.
+      pageBuilder: (context, animation, secondaryAnimation) => DetailsScreen(
+        title: 'Podcast Title', // Título do podcast a ser mostrado na tela de detalhes
+        imagePath: 'assets/podcast_image.png', // Caminho para a imagem do podcast
+        description: 'This is the podcast description.', // Descrição do podcast
+        date: '2025-03-20', // Data de lançamento ou outra informação relevante
+        onFavorite: () {}, // Função de callback para adicionar aos favoritos
+        onMark: () {}, // Função de callback para marcar o podcast
+      ),
+      // transitionsBuilder define a animação da transição entre as telas.
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        // Aqui, estamos criando uma animação de fade.
+        // A animação de fade faz com que a tela "desapareça" de uma e "apareça" na outra.
+        var fadeAnimation = Tween(begin: 0.0, end: 1.0).animate(CurvedAnimation(
+          parent: animation, // Animação principal para a transição
+          curve: Curves.easeInOut, // A curva que define como a animação se comporta (suaviza o efeito)
+        ));
+        
+        // Returna o FadeTransition, que aplica a animação de opacidade na tela de destino (child).
+        return FadeTransition(opacity: fadeAnimation, child: child);
+      },
+    ),
+  );
+}
+
