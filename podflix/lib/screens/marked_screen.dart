@@ -1,9 +1,38 @@
 import 'package:flutter/material.dart';
+import 'package:podflix/database_helper.dart';
+import 'details_screen.dart';
+import '../widgets/podcast_item.dart';
 
-class MarkedScreen extends StatelessWidget {
-  final List<Map<String, String>> markedPodcasts;
+class MarkedScreen extends StatefulWidget {
+  final int userId;
+  
+  MarkedScreen({required this.userId});
+  
+  @override
+  _MarkedScreenState createState() => _MarkedScreenState();
+}
 
-  MarkedScreen({required this.markedPodcasts});
+class _MarkedScreenState extends State<MarkedScreen> {
+  final DatabaseHelper _dbHelper = DatabaseHelper.instance;
+  List<Map<String, dynamic>> _markedPodcasts = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMarked();
+  }
+
+  Future<void> _loadMarked() async {
+    final marked = await _dbHelper.getMarked(widget.userId);
+    setState(() {
+      _markedPodcasts = marked;
+    });
+  }
+
+  Future<void> _removeMarked(String title) async {
+    await _dbHelper.removeMarked(widget.userId, title);
+    await _loadMarked();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -14,7 +43,7 @@ class MarkedScreen extends StatelessWidget {
       ),
       body: Container(
         color: Colors.blue[50],
-        child: markedPodcasts.isEmpty
+        child: _markedPodcasts.isEmpty
             ? Center(
                 child: Text(
                   'Nenhum podcast marcado ainda!',
@@ -23,32 +52,39 @@ class MarkedScreen extends StatelessWidget {
               )
             : ListView.builder(
                 padding: EdgeInsets.all(10),
-                itemCount: markedPodcasts.length,
+                itemCount: _markedPodcasts.length,
                 itemBuilder: (context, index) {
-                  final podcast = markedPodcasts[index];
+                  final podcast = _markedPodcasts[index];
 
-                  return Card(
-                    margin: EdgeInsets.symmetric(vertical: 10),
-                    child: ListTile(
-                      contentPadding: EdgeInsets.all(10),
-                      leading: Image.asset(
-                        podcast['imagePath'] ?? '',
-                        width: 100,
-                        height: 100,
-                        fit: BoxFit.cover,
-                      ),
-                      title: Text(podcast['title'] ?? 'Título não disponível'),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(podcast['description'] ?? 'Descrição não disponível'),
-                          Text(
-                            'Data: ${podcast['date']}',
-                            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  return PodcastItem(
+                    imagePath: podcast['image_path'],
+                    title: podcast['title'],
+                    description: podcast['description'],
+                    date: podcast['date'],
+                    isMarked: true,
+                    onDetailsPressed: () {
+                      Navigator.push(
+                        context,
+                        PageRouteBuilder(
+                          pageBuilder: (context, animation, secondaryAnimation) => DetailsScreen(
+                            title: podcast['title'],
+                            imagePath: podcast['image_path'],
+                            description: podcast['description'],
+                            date: podcast['date'],
+                            onFavorite: () {},
+                            onMark: () => _removeMarked(podcast['title']),
                           ),
-                        ],
-                      ),
-                    ),
+                          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                            var fadeAnimation = Tween(begin: 0.0, end: 1.0).animate(CurvedAnimation(
+                              parent: animation,
+                              curve: Curves.easeInOut,
+                            ));
+                            return FadeTransition(opacity: fadeAnimation, child: child);
+                          },
+                        ),
+                      );
+                    },
+                    onMarkPressed: () => _removeMarked(podcast['title']),
                   );
                 },
               ),

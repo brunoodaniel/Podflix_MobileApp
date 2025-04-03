@@ -1,9 +1,38 @@
 import 'package:flutter/material.dart';
+import 'package:podflix/database_helper.dart';
+import 'details_screen.dart';
+import '../widgets/podcast_item.dart';
 
-class FavoritesScreen extends StatelessWidget {
-  final List<Map<String, String>> favoritePodcasts;
+class FavoritesScreen extends StatefulWidget {
+  final int userId;
+  
+  FavoritesScreen({required this.userId});
+  
+  @override
+  _FavoritesScreenState createState() => _FavoritesScreenState();
+}
 
-  FavoritesScreen({required this.favoritePodcasts});
+class _FavoritesScreenState extends State<FavoritesScreen> {
+  final DatabaseHelper _dbHelper = DatabaseHelper.instance;
+  List<Map<String, dynamic>> _favoritePodcasts = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFavorites();
+  }
+
+  Future<void> _loadFavorites() async {
+    final favorites = await _dbHelper.getFavorites(widget.userId);
+    setState(() {
+      _favoritePodcasts = favorites;
+    });
+  }
+
+  Future<void> _removeFavorite(String title) async {
+    await _dbHelper.removeFavorite(widget.userId, title);
+    await _loadFavorites();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -14,7 +43,7 @@ class FavoritesScreen extends StatelessWidget {
       ),
       body: Container(
         color: Colors.blue[50],
-        child: favoritePodcasts.isEmpty
+        child: _favoritePodcasts.isEmpty
             ? Center(
                 child: Text(
                   'Nenhum podcast favorito ainda!',
@@ -23,58 +52,43 @@ class FavoritesScreen extends StatelessWidget {
               )
             : ListView.builder(
                 padding: EdgeInsets.all(10),
-                itemCount: favoritePodcasts.length,
+                itemCount: _favoritePodcasts.length,
                 itemBuilder: (context, index) {
-                  final podcast = favoritePodcasts[index];
+                  final podcast = _favoritePodcasts[index];
 
-                  return FadeTransition(
-                    opacity: Tween(begin: 0.0, end: 1.0).animate(CurvedAnimation(
-                      parent: ModalRoute.of(context)!.animation!,
-                      curve: Curves.easeInOut,
-                    )),
-                    child: Card(
-                      margin: EdgeInsets.symmetric(vertical: 10),
-                      child: ListTile(
-                        contentPadding: EdgeInsets.all(10),
-                        leading: Image.asset(
-                          podcast['imagePath'] ?? '',
-                          width: 100,
-                          height: 100,
-                          fit: BoxFit.cover,
+                  return PodcastItem(
+                    imagePath: podcast['image_path'],
+                    title: podcast['title'],
+                    description: podcast['description'],
+                    date: podcast['date'],
+                    isFavorite: true,
+                    onDetailsPressed: () {
+                      Navigator.push(
+                        context,
+                        PageRouteBuilder(
+                          pageBuilder: (context, animation, secondaryAnimation) => DetailsScreen(
+                            title: podcast['title'],
+                            imagePath: podcast['image_path'],
+                            description: podcast['description'],
+                            date: podcast['date'],
+                            onFavorite: () => _removeFavorite(podcast['title']),
+                            onMark: () {},
+                          ),
+                          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                            var fadeAnimation = Tween(begin: 0.0, end: 1.0).animate(CurvedAnimation(
+                              parent: animation,
+                              curve: Curves.easeInOut,
+                            ));
+                            return FadeTransition(opacity: fadeAnimation, child: child);
+                          },
                         ),
-                        title: Text(podcast['title'] ?? 'Título não disponível'),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(podcast['description'] ?? 'Descrição não disponível'),
-                            Text(
-                              'Data: ${podcast['date']}',
-                              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                      );
+                    },
+                    onFavoritePressed: () => _removeFavorite(podcast['title']),
                   );
                 },
               ),
       ),
     );
   }
-}
-
-void navigateToFavoritesScreen(BuildContext context) {
-  Navigator.push(
-    context,
-    PageRouteBuilder(
-      pageBuilder: (context, animation, secondaryAnimation) => FavoritesScreen(favoritePodcasts: []),
-      transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        var fadeAnimation = Tween(begin: 0.0, end: 1.0).animate(CurvedAnimation(
-          parent: animation,
-          curve: Curves.easeInOut,
-        ));
-        return FadeTransition(opacity: fadeAnimation, child: child);
-      },
-    ),
-  );
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:podflix/database_helper.dart';
 import 'details_screen.dart';
 import 'favorites_screen.dart';
 import 'marked_screen.dart';
@@ -7,6 +8,10 @@ import 'confirmation_screen.dart';
 import '../widgets/podcast_item.dart';
 
 class HomeScreen extends StatefulWidget {
+  final int userId;
+  
+  HomeScreen({required this.userId});
+  
   @override
   _HomeScreenState createState() => _HomeScreenState();
 }
@@ -45,14 +50,67 @@ class _HomeScreenState extends State<HomeScreen> {
     },
   ];
 
-  List<Map<String, String>> favoritePodcasts = [];
-  List<Map<String, String>> markedPodcasts = [];
+  List<Map<String, dynamic>> favoritePodcasts = [];
+  List<Map<String, dynamic>> markedPodcasts = [];
+  final DatabaseHelper _dbHelper = DatabaseHelper.instance;
 
-  void _navigateToMarkedScreen() async {
-    await Navigator.push(
+  @override
+  void initState() {
+    super.initState();
+    _loadFavorites();
+    _loadMarked();
+  }
+
+  Future<void> _loadFavorites() async {
+    final favorites = await _dbHelper.getFavorites(widget.userId);
+    setState(() {
+      favoritePodcasts = favorites;
+    });
+  }
+
+  Future<void> _loadMarked() async {
+    final marked = await _dbHelper.getMarked(widget.userId);
+    setState(() {
+      markedPodcasts = marked;
+    });
+  }
+
+  Future<void> _toggleFavorite(Map<String, String> podcast) async {
+    final isFavorite = favoritePodcasts.any((p) => p['title'] == podcast['title']);
+    
+    if (isFavorite) {
+      await _dbHelper.removeFavorite(widget.userId, podcast['title']!);
+    } else {
+      await _dbHelper.insertFavorite(widget.userId, podcast);
+    }
+    
+    await _loadFavorites();
+  }
+
+  Future<void> _toggleMarked(Map<String, String> podcast) async {
+    final isMarked = markedPodcasts.any((p) => p['title'] == podcast['title']);
+    
+    if (isMarked) {
+      await _dbHelper.removeMarked(widget.userId, podcast['title']!);
+    } else {
+      await _dbHelper.insertMarked(widget.userId, podcast);
+      // Mostra tela de confirmação apenas quando marca, não quando desmarca
+      _showConfirmationScreen(podcast);
+    }
+    
+    await _loadMarked();
+  }
+
+  void _showConfirmationScreen(Map<String, String> podcast) {
+    Navigator.push(
       context,
       PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => MarkedScreen(markedPodcasts: markedPodcasts),
+        pageBuilder: (context, animation, secondaryAnimation) => ConfirmationScreen(
+          title: podcast['title']!,
+          imagePath: podcast['imagePath']!,
+          description: podcast['description']!,
+          date: podcast['date']!,
+        ),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           var fadeAnimation = Tween(begin: 0.0, end: 1.0).animate(CurvedAnimation(
             parent: animation,
@@ -62,7 +120,40 @@ class _HomeScreenState extends State<HomeScreen> {
         },
       ),
     );
-    setState(() {});
+  }
+
+  void _navigateToFavorites() {
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => 
+          FavoritesScreen(userId: widget.userId),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          var fadeAnimation = Tween(begin: 0.0, end: 1.0).animate(CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeInOut,
+          ));
+          return FadeTransition(opacity: fadeAnimation, child: child);
+        },
+      ),
+    ).then((_) => _loadFavorites());
+  }
+
+  void _navigateToMarked() {
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => 
+          MarkedScreen(userId: widget.userId),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          var fadeAnimation = Tween(begin: 0.0, end: 1.0).animate(CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeInOut,
+          ));
+          return FadeTransition(opacity: fadeAnimation, child: child);
+        },
+      ),
+    ).then((_) => _loadMarked());
   }
 
   @override
@@ -74,25 +165,11 @@ class _HomeScreenState extends State<HomeScreen> {
         actions: [
           IconButton(
             icon: Icon(Icons.star, color: Colors.white),
-            onPressed: () {
-              Navigator.push(
-                context,
-                PageRouteBuilder(
-                  pageBuilder: (context, animation, secondaryAnimation) => FavoritesScreen(favoritePodcasts: favoritePodcasts),
-                  transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                    var fadeAnimation = Tween(begin: 0.0, end: 1.0).animate(CurvedAnimation(
-                      parent: animation,
-                      curve: Curves.easeInOut,
-                    ));
-                    return FadeTransition(opacity: fadeAnimation, child: child);
-                  },
-                ),
-              );
-            },
+            onPressed: _navigateToFavorites,
           ),
           IconButton(
             icon: Icon(Icons.check_circle, color: Colors.white),
-            onPressed: _navigateToMarkedScreen,
+            onPressed: _navigateToMarked,
           ),
           IconButton(
             icon: Icon(Icons.exit_to_app, color: Colors.white),
@@ -111,53 +188,28 @@ class _HomeScreenState extends State<HomeScreen> {
           padding: EdgeInsets.all(10),
           itemCount: podcasts.length,
           itemBuilder: (context, index) {
+            final podcast = podcasts[index];
+            final isFavorite = favoritePodcasts.any((p) => p['title'] == podcast['title']);
+            final isMarked = markedPodcasts.any((p) => p['title'] == podcast['title']);
+            
             return PodcastItem(
-              imagePath: podcasts[index]['imagePath']!,
-              title: podcasts[index]['title']!,
-              description: podcasts[index]['description']!,
-              date: podcasts[index]['date']!,
+              imagePath: podcast['imagePath']!,
+              title: podcast['title']!,
+              description: podcast['description']!,
+              date: podcast['date']!,
+              isFavorite: isFavorite,
+              isMarked: isMarked,
               onDetailsPressed: () {
                 Navigator.push(
                   context,
                   PageRouteBuilder(
                     pageBuilder: (context, animation, secondaryAnimation) => DetailsScreen(
-                      title: podcasts[index]['title']!,
-                      imagePath: podcasts[index]['imagePath']!,
-                      description: podcasts[index]['description']!,
-                      date: podcasts[index]['date']!,
-                      onFavorite: () {
-                        setState(() {
-                          if (!favoritePodcasts.contains(podcasts[index])) {
-                            favoritePodcasts.add(podcasts[index]);
-                          }
-                        });
-                      },
-                      onMark: () {
-                        setState(() {
-                          if (!markedPodcasts.contains(podcasts[index])) {
-                            markedPodcasts.add(podcasts[index]);
-                          }
-                        });
-
-                        Navigator.push(
-                          context,
-                          PageRouteBuilder(
-                            pageBuilder: (context, animation, secondaryAnimation) => ConfirmationScreen(
-                              title: podcasts[index]['title']!,
-                              imagePath: podcasts[index]['imagePath']!,
-                              description: podcasts[index]['description']!,
-                              date: podcasts[index]['date']!,
-                            ),
-                            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                              var fadeAnimation = Tween(begin: 0.0, end: 1.0).animate(CurvedAnimation(
-                                parent: animation,
-                                curve: Curves.easeInOut,
-                              ));
-                              return FadeTransition(opacity: fadeAnimation, child: child);
-                            },
-                          ),
-                        ).then((_) => setState(() {}));
-                      },
+                      title: podcast['title']!,
+                      imagePath: podcast['imagePath']!,
+                      description: podcast['description']!,
+                      date: podcast['date']!,
+                      onFavorite: () => _toggleFavorite(podcast),
+                      onMark: () => _toggleMarked(podcast),
                     ),
                     transitionsBuilder: (context, animation, secondaryAnimation, child) {
                       var fadeAnimation = Tween(begin: 0.0, end: 1.0).animate(CurvedAnimation(
@@ -169,6 +221,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 );
               },
+              onFavoritePressed: () => _toggleFavorite(podcast),
+              onMarkPressed: () => _toggleMarked(podcast),
             );
           },
         ),

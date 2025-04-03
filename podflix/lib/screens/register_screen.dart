@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:podflix/database_helper.dart';
 
 class RegisterScreen extends StatefulWidget {
   @override
@@ -6,16 +7,66 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  final DatabaseHelper _dbHelper = DatabaseHelper.instance;
+  bool _isLoading = false;
+  bool _registrationSuccess = false;
 
-  void _register() {
-    if (_formKey.currentState!.validate()) {
-      Navigator.pop(context, {
-        'email': emailController.text,
-        'password': passwordController.text,
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _register() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _isLoading = true;
+      _registrationSuccess = false;
+    });
+
+    try {
+      // Verifica se o email já está cadastrado
+      final existingUser = await _dbHelper.getUserByEmail(_emailController.text.trim());
+      if (existingUser != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Este email já está cadastrado!')),
+        );
+        return;
+      }
+
+      // Insere o novo usuário no banco de dados
+      final userId = await _dbHelper.insertUser({
+        'email': _emailController.text.trim(),
+        'password': _passwordController.text, // Em produção, usar hash!
       });
+
+      if (userId > 0) {
+        setState(() => _registrationSuccess = true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Cadastro realizado com sucesso!')),
+        );
+        
+        // Retorna os dados para o LoginScreen após 2 segundos
+        await Future.delayed(const Duration(seconds: 2));
+        if (!mounted) return;
+        Navigator.pop(context, {
+          'email': _emailController.text.trim(),
+          'password': _passwordController.text,
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro durante o cadastro: ${e.toString()}')),
+      );
+    } finally {
+      if (!_registrationSuccess) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -29,7 +80,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             key: _formKey,
             child: Container(
               width: 350,
-              padding: EdgeInsets.all(20),
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
@@ -37,24 +88,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   BoxShadow(
                     color: Colors.black12,
                     blurRadius: 10,
-                    offset: Offset(0, 5),
+                    offset: const Offset(0, 5),
                   )
                 ],
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  Image.asset(
+                    'assets/favicon.png',
+                    width: 100,
+                    height: 100,
+                    errorBuilder: (context, error, stackTrace) => 
+                      const Icon(Icons.podcasts, size: 100, color: Colors.blue),
+                  ),
+                  const SizedBox(height: 10),
                   Text(
-                    'Criar Conta',
+                    'Criar Nova Conta',
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
                       color: Colors.blue[800],
                     ),
                   ),
-                  SizedBox(height: 20),
+                  const SizedBox(height: 20),
                   TextFormField(
-                    controller: emailController,
+                    controller: _emailController,
                     decoration: InputDecoration(
                       labelText: 'Email',
                       prefixIcon: Icon(Icons.email, color: Colors.blue[800]),
@@ -62,19 +121,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
+                    keyboardType: TextInputType.emailAddress,
                     validator: (value) {
-                      if (value == null ||
-                          value.isEmpty ||
-                          !RegExp(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")
-                              .hasMatch(value)) {
+                      if (value == null || value.isEmpty) {
+                        return 'Por favor, digite seu email';
+                      }
+                      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                          .hasMatch(value)) {
                         return 'Digite um email válido';
                       }
                       return null;
                     },
                   ),
-                  SizedBox(height: 15),
+                  const SizedBox(height: 15),
                   TextFormField(
-                    controller: passwordController,
+                    controller: _passwordController,
                     obscureText: true,
                     decoration: InputDecoration(
                       labelText: 'Senha',
@@ -84,34 +145,54 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                     ),
                     validator: (value) {
-                      if (value == null || value.length < 6) {
+                      if (value == null || value.isEmpty) {
+                        return 'Por favor, digite sua senha';
+                      }
+                      if (value.length < 6) {
                         return 'A senha deve ter pelo menos 6 caracteres';
                       }
                       return null;
                     },
                   ),
-                  SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: _register,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue[800],
-                      padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                  const SizedBox(height: 20),
+                  if (_isLoading)
+                    const CircularProgressIndicator()
+                  else if (_registrationSuccess)
+                    const Column(
+                      children: [
+                        Icon(Icons.check_circle, color: Colors.green, size: 50),
+                        SizedBox(height: 10),
+                        Text('Cadastro realizado! Redirecionando...'),
+                      ],
+                    )
+                  else
+                    ElevatedButton(
+                      onPressed: _register,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue[800],
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 40, vertical: 15),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      child: const Text(
+                        'Cadastrar',
+                        style: TextStyle(fontSize: 16, color: Colors.white),
                       ),
                     ),
-                    child: Text('Cadastrar', style: TextStyle(fontSize: 16, color: Colors.white)),
-                  ),
-                  SizedBox(height: 15),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    child: Text(
-                      'Voltar para Login',
-                      style: TextStyle(color: Colors.blue[800], fontSize: 14),
+                  const SizedBox(height: 15),
+                  if (!_isLoading && !_registrationSuccess)
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(
+                        'Voltar para Login',
+                        style: TextStyle(
+                          color: Colors.blue[800],
+                          fontSize: 14,
+                        ),
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),
