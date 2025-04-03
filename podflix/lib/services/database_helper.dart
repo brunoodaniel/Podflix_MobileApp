@@ -6,13 +6,12 @@ class DatabaseHelper {
   static const _databaseName = "PodflixDB.db";
   static const _databaseVersion = 1;
 
-  // Tabela de usuários
+  // Tabelas e colunas
   static const tableUsers = 'users';
   static const columnUserId = 'id';
   static const columnUserEmail = 'email';
   static const columnUserPassword = 'password';
 
-  // Tabela de podcasts favoritos
   static const tableFavorites = 'favorites';
   static const columnFavoriteId = 'id';
   static const columnUserIdFk = 'user_id';
@@ -21,7 +20,6 @@ class DatabaseHelper {
   static const columnPodcastDesc = 'description';
   static const columnPodcastDate = 'date';
 
-  // Tabela de podcasts marcados
   static const tableMarked = 'marked';
   static const columnMarkedId = 'id';
   static const columnUserIdFkMarked = 'user_id';
@@ -30,7 +28,6 @@ class DatabaseHelper {
   static const columnPodcastDescMarked = 'description';
   static const columnPodcastDateMarked = 'date';
 
-  // Singleton
   DatabaseHelper._privateConstructor();
   static final DatabaseHelper instance = DatabaseHelper._privateConstructor();
 
@@ -52,7 +49,6 @@ class DatabaseHelper {
   }
 
   Future _onCreate(Database db, int version) async {
-    // Criação da tabela de usuários
     await db.execute('''
       CREATE TABLE $tableUsers (
         $columnUserId INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -61,7 +57,6 @@ class DatabaseHelper {
       )
     ''');
 
-    // Criação da tabela de favoritos
     await db.execute('''
       CREATE TABLE $tableFavorites (
         $columnFavoriteId INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -74,7 +69,6 @@ class DatabaseHelper {
       )
     ''');
 
-    // Criação da tabela de marcados
     await db.execute('''
       CREATE TABLE $tableMarked (
         $columnMarkedId INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -89,83 +83,78 @@ class DatabaseHelper {
   }
 
   // Métodos para Usuários
-Future<int> insertUser(Map<String, dynamic> row) async {
-  Database db = await instance.database;
-  return await db.insert(tableUsers, row);
-}
+  Future<int> insertUser(Map<String, dynamic> row) async {
+    Database db = await instance.database;
+    return await db.insert(tableUsers, row);
+  }
 
-Future<List<Map<String, dynamic>>> queryAllUsers() async {
-  Database db = await instance.database;
-  return await db.query(tableUsers);
-}
+  Future<Map<String, dynamic>?> getUserByEmail(String email) async {
+    Database db = await instance.database;
+    List<Map<String, dynamic>> result = await db.query(
+      tableUsers,
+      where: '$columnUserEmail = ?',
+      whereArgs: [email],
+    );
+    return result.isNotEmpty ? result.first : null;
+  }
 
-Future<Map<String, dynamic>?> getUserByEmail(String email) async {
-  Database db = await instance.database;
-  List<Map<String, dynamic>> result = await db.query(
-    tableUsers,
-    where: '$columnUserEmail = ?',
-    whereArgs: [email],
-  );
-  return result.isNotEmpty ? result.first : null;
-}
+  // Métodos para Favoritos
+  Future<int> insertFavorite(int userId, Map<String, dynamic> podcast) async {
+    Database db = await instance.database;
+    return await db.insert(tableFavorites, {
+      columnUserIdFk: userId,
+      columnPodcastTitle: podcast['title'],
+      columnPodcastImage: podcast['imageUrl'],
+      columnPodcastDesc: podcast['description'],
+      columnPodcastDate: podcast['date'],
+    });
+  }
 
-// Métodos para Favoritos
-Future<int> insertFavorite(int userId, Map<String, String> podcast) async {
-  Database db = await instance.database;
-  return await db.insert(tableFavorites, {
-    columnUserIdFk: userId,
-    columnPodcastTitle: podcast['title']!,
-    columnPodcastImage: podcast['imagePath']!,
-    columnPodcastDesc: podcast['description']!,
-    columnPodcastDate: podcast['date']!,
-  });
-}
+  Future<List<Map<String, dynamic>>> getFavorites(int userId) async {
+    Database db = await instance.database;
+    return await db.query(
+      tableFavorites,
+      where: '$columnUserIdFk = ?',
+      whereArgs: [userId],
+    );
+  }
 
-Future<List<Map<String, dynamic>>> getFavorites(int userId) async {
-  Database db = await instance.database;
-  return await db.query(
-    tableFavorites,
-    where: '$columnUserIdFk = ?',
-    whereArgs: [userId],
-  );
-}
+  Future<int> removeFavorite(int userId, String podcastTitle) async {
+    Database db = await instance.database;
+    return await db.delete(
+      tableFavorites,
+      where: '$columnUserIdFk = ? AND $columnPodcastTitle = ?',
+      whereArgs: [userId, podcastTitle],
+    );
+  }
 
-Future<int> removeFavorite(int userId, String podcastTitle) async {
-  Database db = await instance.database;
-  return await db.delete(
-    tableFavorites,
-    where: '$columnUserIdFk = ? AND $columnPodcastTitle = ?',
-    whereArgs: [userId, podcastTitle],
-  );
-}
+  // Métodos para Marcados
+  Future<int> insertMarked(int userId, Map<String, dynamic> podcast) async {
+    Database db = await instance.database;
+    return await db.insert(tableMarked, {
+      columnUserIdFkMarked: userId,
+      columnPodcastTitleMarked: podcast['title'],
+      columnPodcastImageMarked: podcast['imageUrl'],
+      columnPodcastDescMarked: podcast['description'],
+      columnPodcastDateMarked: podcast['date'],
+    });
+  }
 
-// Métodos para Marcados
-Future<int> insertMarked(int userId, Map<String, String> podcast) async {
-  Database db = await instance.database;
-  return await db.insert(tableMarked, {
-    columnUserIdFkMarked: userId,
-    columnPodcastTitleMarked: podcast['title']!,
-    columnPodcastImageMarked: podcast['imagePath']!,
-    columnPodcastDescMarked: podcast['description']!,
-    columnPodcastDateMarked: podcast['date']!,
-  });
-}
+  Future<List<Map<String, dynamic>>> getMarked(int userId) async {
+    Database db = await instance.database;
+    return await db.query(
+      tableMarked,
+      where: '$columnUserIdFkMarked = ?',
+      whereArgs: [userId],
+    );
+  }
 
-Future<List<Map<String, dynamic>>> getMarked(int userId) async {
-  Database db = await instance.database;
-  return await db.query(
-    tableMarked,
-    where: '$columnUserIdFkMarked = ?',
-    whereArgs: [userId],
-  );
-}
-
-Future<int> removeMarked(int userId, String podcastTitle) async {
-  Database db = await instance.database;
-  return await db.delete(
-    tableMarked,
-    where: '$columnUserIdFkMarked = ? AND $columnPodcastTitleMarked = ?',
-    whereArgs: [userId, podcastTitle],
-  );
-}
+  Future<int> removeMarked(int userId, String podcastTitle) async {
+    Database db = await instance.database;
+    return await db.delete(
+      tableMarked,
+      where: '$columnUserIdFkMarked = ? AND $columnPodcastTitleMarked = ?',
+      whereArgs: [userId, podcastTitle],
+    );
+  }
 }

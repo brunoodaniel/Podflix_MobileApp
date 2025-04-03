@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:podflix/database_helper.dart';
-import 'details_screen.dart';
-import '../widgets/podcast_item.dart';
+import 'package:podflix/services/database_helper.dart';
+import 'package:podflix/widgets/podcast_item.dart';
 
 class MarkedScreen extends StatefulWidget {
   final int userId;
   
-  MarkedScreen({required this.userId});
+  const MarkedScreen({Key? key, required this.userId}) : super(key: key);
   
   @override
   _MarkedScreenState createState() => _MarkedScreenState();
@@ -15,6 +14,7 @@ class MarkedScreen extends StatefulWidget {
 class _MarkedScreenState extends State<MarkedScreen> {
   final DatabaseHelper _dbHelper = DatabaseHelper.instance;
   List<Map<String, dynamic>> _markedPodcasts = [];
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -23,72 +23,68 @@ class _MarkedScreenState extends State<MarkedScreen> {
   }
 
   Future<void> _loadMarked() async {
-    final marked = await _dbHelper.getMarked(widget.userId);
-    setState(() {
-      _markedPodcasts = marked;
-    });
+    setState(() => _isLoading = true);
+    try {
+      final marked = await _dbHelper.getMarked(widget.userId);
+      setState(() => _markedPodcasts = marked);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao carregar marcados: ${e.toString()}')),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
   Future<void> _removeMarked(String title) async {
-    await _dbHelper.removeMarked(widget.userId, title);
-    await _loadMarked();
+    try {
+      await _dbHelper.removeMarked(widget.userId, title);
+      await _loadMarked();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Removido dos marcados')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao remover marcado: ${e.toString()}')),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Podcasts Marcados'),
+        title: const Text('Assistir Mais Tarde'),
         backgroundColor: const Color.fromARGB(255, 100, 172, 255),
       ),
-      body: Container(
-        color: Colors.blue[50],
-        child: _markedPodcasts.isEmpty
-            ? Center(
-                child: Text(
-                  'Nenhum podcast marcado ainda!',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              )
-            : ListView.builder(
-                padding: EdgeInsets.all(10),
-                itemCount: _markedPodcasts.length,
-                itemBuilder: (context, index) {
-                  final podcast = _markedPodcasts[index];
-
-                  return PodcastItem(
-                    imagePath: podcast['image_path'],
-                    title: podcast['title'],
-                    description: podcast['description'],
-                    date: podcast['date'],
-                    isMarked: true,
-                    onDetailsPressed: () {
-                      Navigator.push(
-                        context,
-                        PageRouteBuilder(
-                          pageBuilder: (context, animation, secondaryAnimation) => DetailsScreen(
-                            title: podcast['title'],
-                            imagePath: podcast['image_path'],
-                            description: podcast['description'],
-                            date: podcast['date'],
-                            onFavorite: () {},
-                            onMark: () => _removeMarked(podcast['title']),
-                          ),
-                          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                            var fadeAnimation = Tween(begin: 0.0, end: 1.0).animate(CurvedAnimation(
-                              parent: animation,
-                              curve: Curves.easeInOut,
-                            ));
-                            return FadeTransition(opacity: fadeAnimation, child: child);
-                          },
-                        ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _markedPodcasts.isEmpty
+              ? const Center(
+                  child: Text(
+                    'Nenhum podcast marcado ainda!',
+                    style: TextStyle(fontSize: 18),
+                  ),
+                )
+              : RefreshIndicator(
+                  onRefresh: _loadMarked,
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(8),
+                    itemCount: _markedPodcasts.length,
+                    itemBuilder: (context, index) {
+                      final podcast = _markedPodcasts[index];
+                      return PodcastItem(
+                        imageUrl: podcast['image_path'],
+                        title: podcast['title'],
+                        description: podcast['description'],
+                        publisher: podcast['publisher'] ?? 'Desconhecido',
+                        date: podcast['date'],
+                        isMarked: true,
+                        onMarkPressed: () => _removeMarked(podcast['title']),
                       );
                     },
-                    onMarkPressed: () => _removeMarked(podcast['title']),
-                  );
-                },
-              ),
-      ),
+                  ),
+                ),
     );
   }
 }
