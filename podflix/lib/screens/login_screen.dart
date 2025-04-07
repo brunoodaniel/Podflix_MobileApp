@@ -65,6 +65,127 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> _updatePassword() async {
+    final email = _emailController.text.trim();
+    if (email.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Por favor, digite seu email primeiro')),
+      );
+      return;
+    }
+
+    final newPassword = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        final passwordController = TextEditingController();
+        return AlertDialog(
+          title: const Text('Atualizar Senha'),
+          content: TextField(
+            controller: passwordController,
+            obscureText: true,
+            decoration: const InputDecoration(labelText: 'Nova Senha'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () {
+                if (passwordController.text.length >= 6) {
+                  Navigator.pop(context, passwordController.text);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('A senha deve ter pelo menos 6 caracteres')),
+                  );
+                }
+              },
+              child: const Text('Salvar'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (newPassword != null && newPassword.isNotEmpty) {
+      setState(() => _isLoading = true);
+      try {
+        final user = await _dbHelper.getUserByEmail(email);
+        if (user != null) {
+          await _dbHelper.updateUser(user['id'], {'password': newPassword});
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Senha atualizada com sucesso!')),
+          );
+          _passwordController.text = newPassword;
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao atualizar senha: ${e.toString()}')),
+        );
+      } finally {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _forgetUser() async {
+    final email = _emailController.text.trim();
+    if (email.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Por favor, digite o email do usuário que deseja esquecer')),
+      );
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirmar Exclusão'),
+        content: Text('Tem certeza que deseja excluir o usuário $email e todos os seus dados? Esta ação não pode ser desfeita.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Excluir', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final user = await _dbHelper.getUserByEmail(email);
+      if (user == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Usuário não encontrado')),
+        );
+        return;
+      }
+
+      final userId = user['id'] as int;
+      await _dbHelper.deleteUser(userId);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Usuário e todos os dados relacionados foram excluídos com sucesso')),
+      );
+
+      _emailController.clear();
+      _passwordController.clear();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao excluir usuário: ${e.toString()}')),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -169,12 +290,38 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                     const SizedBox(height: 15),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        TextButton(
+                          onPressed: _navigateToRegister,
+                          child: Text(
+                            'Cadastre-se',
+                            style: TextStyle(
+                              color: Colors.blue[800],
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: _updatePassword,
+                          child: Text(
+                            'Atualizar Senha',
+                            style: TextStyle(
+                              color: Colors.blue[800],
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
                     TextButton(
-                      onPressed: _navigateToRegister,
-                      child: Text(
-                        'Não tem uma conta? Cadastre-se',
+                      onPressed: _forgetUser,
+                      child: const Text(
+                        'Esquecer Usuário',
                         style: TextStyle(
-                          color: Colors.blue[800],
+                          color: Colors.red,
                           fontSize: 14,
                         ),
                       ),
