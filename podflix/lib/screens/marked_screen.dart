@@ -54,7 +54,7 @@ class _MarkedScreenState extends State<MarkedScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Assistir Mais Tarde'),
+        title: const Text('Marcados'),
         backgroundColor: const Color.fromARGB(255, 100, 172, 255),
       ),
       body: _isLoading
@@ -74,11 +74,11 @@ class _MarkedScreenState extends State<MarkedScreen> {
                     itemBuilder: (context, index) {
                       final podcast = _markedPodcasts[index];
                       return PodcastItem(
-                        imageUrl: podcast['image_path'],
-                        title: podcast['title'],
-                        description: podcast['description'],
-                        publisher: podcast['publisher'] ?? 'Desconhecido',
-                        date: podcast['date'],
+                        imageUrl: podcast['imageUrl'] ?? podcast['image_path'] ?? '',
+                        title: podcast['title'] ?? 'Sem título',
+                        description: podcast['description'] ?? 'Sem descrição',
+                        publisher: podcast['publisher'] ?? 'Max Brigida Cavalie',
+                        date: podcast['date'] ?? 'Data desconhecida',
                         isMarked: true,
                         onMarkPressed: () => _removeMarked(podcast['title']),
                       );

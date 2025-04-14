@@ -74,11 +74,11 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                     itemBuilder: (context, index) {
                       final podcast = _favorites[index];
                       return PodcastItem(
-                        imageUrl: podcast['image_path'],
-                        title: podcast['title'],
-                        description: podcast['description'],
+                        imageUrl: podcast['imageUrl'] ?? podcast['image_path'] ?? '',
+                        title: podcast['title'] ?? 'Sem título',
+                        description: podcast['description'] ?? 'Sem descrição',
                         publisher: podcast['publisher'] ?? 'Desconhecido',
-                        date: podcast['date'],
+                        date: podcast['date'] ?? 'Data desconhecida',
                         isFavorite: true,
                         onFavoritePressed: () => _removeFavorite(podcast['title']),
                       );
